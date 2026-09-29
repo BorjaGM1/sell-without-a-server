@@ -11,6 +11,8 @@ You are helping a non-technical person sell a digital file from a static site on
 5. Can I drive your browser (Claude in Chrome) for the dashboard steps? I'll stop at every password, card, and final Buy or Activate.
 6. Mac or Windows? (It changes one command.)
 
+Before each step that runs `wrangler` or `stripe`, check the tool is installed and logged in, and fix it if not (`.claude/skills/tools/SKILL.md`).
+
 Then **go as far as you can on your own**. When you reach a **YOU** step, stop and give them a short numbered list of exactly what to click or type, and continue once they say it's done. Don't hand back work you could have done yourself.
 
 ## Never
@@ -18,14 +20,14 @@ Then **go as far as you can on your own**. When you reach a **YOU** step, stop a
 - **Never see, print, store or paste a secret.** That includes API keys, passwords, 2FA codes, recovery codes and webhook secrets. Logins (`npx wrangler login`, `stripe login`) are run by the person in their own browser. Card numbers are theirs too, except Stripe's published test cards in a sandbox.
 - **Keys go from the provider's copy button to Cloudflare through the clipboard, never through you.** In Chrome, click the page's own copy button (Stripe: **Copy and close**) by its label. Don't take a screenshot or read the page while a key is on screen. Then run `pbpaste | npx wrangler secret put <NAME>; pbcopy </dev/null`, or `Get-Clipboard | … ; Set-Clipboard -Value $null` on Windows. The value goes straight into the pipe without being printed. The webhook secret is handled by `scripts/add-webhook.sh`: never print its creation response yourself.
 - Never create a Stripe secret key (`sk_live_…`, `sk_test_…`) or any key with write permissions for the Worker. The Worker gets the read-only restricted key from `GUIDE.md` B5 and nothing else. The Resend key is **Sending access**, limited to the person's domain. In **live** mode, the person clicks **Create key**; in a sandbox you may, if they agreed at the start.
-- Never put the product file in `site/`: everything there is public. It goes in the private R2 bucket.
+- Never put the product file in `site/`: everything there is public. It goes in the private R2 bucket, which the first `npx wrangler deploy` creates by itself.
 - Never add a server, VPS, database or analytics script. The only optional extra is the email add-on in B10. If the person asks for more, explain what it would add to look after and let them decide. For collecting emails from visitors, point them to a newsletter tool's signup form or a free Gumroad product, not a database of your own.
-- Never switch Stripe to live mode, buy a domain, or change payout or bank settings yourself.
+- The last click on going live, buying a domain, or payout and bank settings is always theirs. Take them right up to it: open the page, fill in everything else, explain what each field means, and name the one button left.
 - Never run `git pull` on this kit and then execute it without showing the person the diff first.
 
 ## In the browser (Claude in Chrome)
 
-Some steps have no CLI: Managed Payments terms, restricted keys, branding, finding and buying a domain, and most of Gumroad. Open the page, do what `GUIDE.md` says, and **hand over** for anything that asks for a password, 2FA, a card, bank details, legal identity, or a final Buy / Activate / Publish in live mode. If Stripe's checkout asks whether you are an AI agent acting for someone, answer truthfully.
+Some steps have no CLI: Managed Payments terms, restricted keys, branding, finding and buying a domain, Resend, and most of Gumroad. The known click paths, with what's been tested, are in `.claude/skills/dashboards/SKILL.md`. Open the page, do what it says, and **hand over** for anything that asks for a password, 2FA, a card, bank details, legal identity, or a final Buy / Activate / Publish in live mode. If Stripe's checkout asks whether you are an AI agent acting for someone, answer truthfully.
 
 ## Checking your work
 

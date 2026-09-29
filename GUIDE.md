@@ -8,13 +8,17 @@ Steps marked **YOU** are yours: logins, cards, bank details, anything that asks 
 
 **I'd use Gumroad.** Make the product on Gumroad, put its link on your buy button, done. Gumroad is the *merchant of record*: it charges the buyer, works out and pays VAT and sales tax worldwide, hosts your file, emails the buyer a receipt with the download, and lets you email your customers later. You write no code.
 
-**Stripe if you want lower fees**, and you're in a country where [Stripe Managed Payments](https://docs.stripe.com/payments/managed-payments/eligibility) works (US, Canada, UK, most of the EU, Switzerland, Norway, Australia, Japan, Singapore, Hong Kong). Managed Payments makes Stripe the merchant of record too, so tax is handled. What Stripe doesn't do is deliver the file. This kit's one small Worker does that, with a read-only key.
+**Stripe if you want lower fees**, and you're in a country where [Stripe Managed Payments](https://docs.stripe.com/payments/managed-payments/eligibility) works (US, Canada, UK, most of the EU, Switzerland, Norway, Australia, Japan, Singapore, Hong Kong). Managed Payments makes Stripe the merchant of record too, so tax is handled. What Stripe doesn't do is host your file or send the buyer their download. This kit does both:
+- The file sits in a private Cloudflare bucket.
+- One small Worker checks the payment with a read-only key and serves the file.
+- Emailing the link is an optional add-on (B10).
 
 | On a $19 sale (US card) | Gumroad | Stripe + Managed Payments |
 |---|---|---|
 | Fees | 10% + $0.50, plus 2.9% + $0.30 processing ≈ **$3.25** | 2.9% + $0.30 processing, plus 3.5% ≈ **$1.52** |
 | Tax (VAT / sales tax) | Gumroad | Stripe |
-| Delivers the file, emails the download | Gumroad | This kit's Worker shows the download page; Stripe emails a receipt, without the link |
+| Hosts the file | Gumroad | This kit: a private Cloudflare bucket |
+| Gives the buyer the download | Gumroad: the download page, and an email with the link | This kit: a download page. The email with the link is optional (B10); Stripe's receipt doesn't include it |
 | Code you run | None | One Worker, under 200 lines |
 | Setup | ~15 minutes | ~1 hour |
 
@@ -26,7 +30,7 @@ Fees change: check [gumroad.com/pricing](https://gumroad.com/pricing) (Gumroad's
 
 - [Cloudflare](https://dash.cloudflare.com/sign-up), plus [Gumroad](https://gumroad.com) **or** [Stripe](https://dashboard.stripe.com/register).
 - Turn on **2FA** on every one of them, and on the email they log in with. That is the most important security step in this guide: with this setup there is no server to break into, so your accounts are the only way in.
-- On your computer: [Node.js](https://nodejs.org) (LTS). For Stripe, also the [Stripe CLI](https://docs.stripe.com/stripe-cli).
+- The tools the kit uses, [Node.js](https://nodejs.org), Cloudflare's `wrangler` and, for Stripe, the [Stripe CLI](https://docs.stripe.com/stripe-cli): your agent checks them and installs whatever is missing, right before the step that needs it. It also checks you're logged in; when you aren't, it runs the login and you click **Allow** in the browser. (Doing it by hand? `.claude/skills/tools/SKILL.md` has the commands.)
 
 ## 2. The landing page
 
@@ -41,6 +45,7 @@ The page's rules:
 
 ```bash
 npm install                 # once: installs wrangler, Cloudflare's tool
+npx wrangler whoami         # are you logged in? If not:
 npx wrangler login          # YOU: a browser window opens, log in and click Allow
 ```
 
@@ -53,8 +58,10 @@ npx wrangler deploy
 It prints your address, `https://<name>.<you>.workers.dev`. Open it. Every change to `site/` is another `npx wrangler deploy`.
 
 **3b. Your domain.** The agent asks you now, because the Stripe link (B6) and the email add-on (B10) are built on your final address, and changing it later means redoing them. It asks whether you already have a domain:
-- **No.** The agent offers to drive Chrome: Cloudflare dashboard → **Domain Registration → Register Domains**. It searches names based on what you sell and shows you a shortlist with the yearly price of each. It looks for names that are short, easy to say out loud and to spell, with no hyphens, and `.com` first. Cloudflare sells at cost and doesn't raise the price at renewal, and WHOIS privacy is free. **YOU** pick one and buy it: the agent stops before the card, the contact details and the Purchase button.
-- **Yes, bought somewhere else** (GoDaddy, Namecheap…). Keep it registered there, but let Cloudflare run it: Cloudflare → **Add a domain** (Free plan), then **YOU** change the nameservers at your registrar to the two Cloudflare shows. It takes minutes to a few hours.
+- **No.** Buy it on Cloudflare. The agent offers to drive Chrome: Cloudflare dashboard → **Domain Registration → Register Domains**. It searches names based on what you sell and shows you a shortlist with the yearly price of each. It looks for names that are short, easy to say out loud and to spell, with no hyphens, and `.com` first. Cloudflare sells at cost and doesn't raise the price at renewal, and WHOIS privacy is free. **YOU** pick one and buy it: the agent stops before the card, the contact details and the Purchase button.
+- **Yes, bought somewhere else** (GoDaddy, Namecheap…). Move it to Cloudflare, where renewals cost what Cloudflare pays for them, with nothing on top. The agent walks you through it:
+  1. Cloudflare → **Add a domain** (Free plan). **YOU** change the nameservers at your current registrar to the two Cloudflare shows. This alone is enough for the kit to work, and takes minutes to a few hours.
+  2. Then **Domain Registration → Transfer Domains**. **YOU** unlock the domain and get its auth code at the old registrar. You pay one year at Cloudflare's price, and it's added to your registration. A domain bought or moved in the last 60 days has to wait.
 - **Not now.** The `workers.dev` address works for everything except the email add-on (B10). Stripe's link can be remade later.
 
 Then the agent puts the domain in the `"routes"` line of `wrangler.jsonc` and deploys again. A brand-new domain can take a few minutes to answer. If it looks dead from your computer but `dig @1.1.1.1 yourdomain.com` shows an address, it's your computer's DNS cache, not the site.
@@ -86,7 +93,7 @@ Everything is done in a **sandbox** (fake money) first, then repeated live in B8
 **B1. Sandbox and CLI (YOU).**
 - Stripe Dashboard → the account menu (top left) → **Sandboxes → Create**.
 - If your Stripe CLI is v1.50 or newer, an account admin first allows it: **Settings → Team and security → MCP and CLI access**.
-- `stripe login` in the terminal, and pick the sandbox in the browser window that opens.
+- `stripe whoami` shows whether you're logged in, and to which account. If not: `stripe login`, and pick the sandbox in the browser window that opens. The login lasts about 90 days.
 
 **B2. Turn on Managed Payments (YOU, or the agent in Chrome).** In the sandbox: [Settings → Managed Payments](https://dashboard.stripe.com/settings/managed-payments), accept the terms.
 

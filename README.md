@@ -27,6 +27,7 @@ Prefer doing it by hand? `GUIDE.md` is written for people who have never used a 
 | `src/worker.js` | Stripe path only: the thank-you page, the file download, and the optional email |
 | `scripts/add-webhook.sh` | Optional email add-on: creates the Stripe webhook without showing its secret |
 | `wrangler.jsonc` | Cloudflare settings: name, domain, products |
+| `.claude/skills/` | For the agent: tool install and login steps, and known dashboard click paths |
 
 ## What can go wrong, and what doesn't exist to go wrong
 
