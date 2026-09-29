@@ -217,6 +217,24 @@ and send them `https://YOUR-SITE/thanks?session_id=<the cs_live_... id>`. It wor
 - **Changed the page?** Run `node scripts/check-buy-links.mjs` before every deploy.
 - **Sales, refunds, buyers:** all in the Gumroad or Stripe dashboard. The kit keeps no records of its own.
 
+## Several shops, one backend
+
+Selling more than one product, each with its own site and domain? You don't need one of everything per shop. The layout:
+- **One "shop" domain** (for example `shop.yourbrand.com`, or a domain of its own) runs this kit's Worker: `/thanks`, `/download` and, with C1, the webhook and the emails.
+- `PRODUCTS` lists every product's Payment Link.
+- One bucket holds all the files.
+- One Stripe account, and one Resend domain (Resend's free plan allows one).
+- **Each shop's site** is a plain static site on its own domain. It's a second Cloudflare project with only `name`, `assets` and `routes`, and no code. Its buy buttons are the Payment Links, and every link redirects to `https://<shop domain>/thanks?...`.
+- **Email:** Cloudflare Email Routing forwards each domain's address (hello@, support@) to your inbox, free.
+
+**What's shared, and visible:**
+- Every checkout shows your one Stripe business name.
+- Every download email comes from the shop domain.
+- Buyers see the shop domain on the thank-you page.
+If you want each brand fully separate, run a separate copy of the kit per brand instead.
+
+**Checking:** run `node scripts/check-buy-links.mjs --site https://<shop domain>` in each site's folder (copy `scripts/` over). It confirms every button's link returns buyers to the shop domain.
+
 ## Legal basics (not legal advice)
 
 The merchant of record (Gumroad, or Stripe with Managed Payments) is the seller in the buyer's eyes for the payment. It handles the checkout terms, tax, invoices and the EU rules on buying digital content. You still need a few things on your page:
@@ -233,6 +251,8 @@ The agent can write these from your answers. Have them checked if your situation
 The agent offers these once your shop works, not before. Each one adds something to look after, so take only what you'll use.
 
 ### C1. Email buyers their link (Stripe path)
+
+**Recommended on the Stripe path.** Buyers expect an email with their purchase. It carries the download *link*, not the file: attachments land in spam more often, and an emailed file can't be taken back after a refund.
 
 Stripe's receipt doesn't include the download, so a buyer who closes the tab has to write to you. This add-on emails them the thank-you link right after they pay, through [Resend](https://resend.com) (free up to 3,000 emails a month, 100 a day). It needs **your own domain** (step 3), and adds two secrets: a Stripe webhook secret and a Resend key that can only send.
 1. **YOU:** make a Resend account and turn on 2FA. **Domains → Add domain**, and enter your domain. Resend shows a few DNS records: let it add them to Cloudflare if it offers to, or add them yourself in Cloudflare → your domain → **DNS**. Wait until Resend says **Verified**.

@@ -14,7 +14,7 @@ Most people arrive with part of it done: a finished file, a landing page, a Gumr
 6. Can I drive your browser (Claude in Chrome) for the dashboard steps? I'll stop at every password, card, and final Buy or Activate. In the Stripe sandbox, can I also click Create on the test key myself? (Live keys are always theirs.)
 7. Mac or Windows? (A few commands differ.)
 
-If they already have a landing page, work with it: only the buy button (and, for C2, the form) has to change. If it's hosted elsewhere, only the Worker needs deploying (Stripe path); the landing can stay where it is.
+No landing page? Ask whether they want you to make a simple one from their answers (`GUIDE.md` step 2), or they'd rather bring their own. If they already have one, work with it: only the buy button (and, for C2, the form) has to change. If it's hosted elsewhere, only the Worker needs deploying (Stripe path); the landing can stay where it is.
 
 Pick one short name for the shop (lowercase, dashes) and use it everywhere in `wrangler.jsonc`: `name`, `bucket_name` (`<name>-files`) and, for C2, `database_name` (`<name>-subscribers`).
 
@@ -35,7 +35,7 @@ Then **go as far as you can on your own**. When you reach a **YOU** step, stop a
 ## End: offer the add-ons
 
 Once the shop works end to end, and not before, offer the add-ons in one message, with one line each on what it gives and what it adds to look after:
-- **C1. Email buyers their link.** Stripe path only; needs their own domain and a Resend account.
+- **C1. Email buyers their link.** Stripe path only, and **recommended** there: buyers expect an email, and Stripe's receipt doesn't include the download. Needs their own domain and a Resend account. It sends the link, never the file as an attachment.
 - **C2. Email signup form.** Either path. A free newsletter tool's own form is the alternative if they'd rather not keep the list themselves.
 
 Follow `GUIDE.md` exactly for whichever they pick, including every protection. For C2, never ship the form without Turnstile unless they explicitly decline it after you explain what it's for, and always say on the page what people are signing up for.
