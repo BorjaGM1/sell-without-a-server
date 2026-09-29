@@ -4,9 +4,11 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "logs": "wrangler tail"
+    "logs": "wrangler tail",
+    "check": "node scripts/check-buy-links.mjs"
   },
   "devDependencies": {
     "wrangler": "4.143.1"
-  }
+  },
+  "license": "MIT"
 }

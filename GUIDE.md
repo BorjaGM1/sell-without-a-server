@@ -19,8 +19,8 @@ Steps marked **YOU** are yours: logins, cards, bank details, anything that asks 
 | Tax (VAT / sales tax) | Gumroad | Stripe |
 | Hosts the file | Gumroad | This kit: a private Cloudflare bucket |
 | Gives the buyer the download | Gumroad: the download page, and an email with the link | This kit: a download page. The email with the link is optional (C1); Stripe's receipt doesn't include it |
-| Code you run | None | One Worker, under 200 lines |
-| Setup | ~15 minutes | ~1 hour |
+| Code you run | None | One small Worker (`src/worker.js`, read it; most of it is the optional add-ons) |
+| Setup | ~30 minutes | 1.5 to 2.5 hours in the sandbox. Going live adds Stripe's account review, which can take days |
 
 Fees change: check [gumroad.com/pricing](https://gumroad.com/pricing) (Gumroad's card processing is on top, see [its fee page](https://gumroad.com/help/article/66-gumroads-fees)) and [stripe.com/pricing](https://stripe.com/pricing). Selling through Gumroad's Discover marketplace costs 30%.
 
@@ -39,6 +39,7 @@ One page in `site/`: `index.html` plus its images. Tell the agent what you sell,
 The page's rules:
 - The buy button is a plain link to your Gumroad product or Stripe Payment Link (steps A2 and B6). While you don't have it yet, use `#`.
 - Everything in `site/` is public. **Never put the product file in `site/`.**
+- The footer has a contact email and your refund policy (see "Legal basics").
 - No trackers, and no forms or scripts that aren't needed (the one exception is the signup form, add-on C2). The page sells; Gumroad or Stripe does everything else.
 
 ## 3. Put it online (Cloudflare)
@@ -49,15 +50,15 @@ npx wrangler whoami         # are you logged in? If not:
 npx wrangler login          # YOU: a browser window opens, log in and click Allow
 ```
 
-Change `"name"` in `wrangler.jsonc` to your shop's name, then:
+In `wrangler.jsonc`, give the shop a short name (lowercase, dashes) and use it for `"name"` and for `"bucket_name"` (`<name>-files`). Put your contact email in `"SUPPORT_EMAIL"`. If `wrangler whoami` lists more than one Cloudflare account, add `"account_id": "<the one you want>"`. Then:
 
 ```bash
 npx wrangler deploy
 ```
 
-It prints your address, `https://<name>.<you>.workers.dev`. Open it. Every change to `site/` is another `npx wrangler deploy`.
+It prints your address, `https://<name>.<you>.workers.dev`. On a brand-new Cloudflare account it first asks you to pick your `workers.dev` subdomain (once, forever). Open it. Every change to `site/` is another `npx wrangler deploy`.
 
-**3b. Your domain.** The agent asks you now, because the Stripe link (B6) and the email add-on (C1) are built on your final address, and changing it later means redoing them. It asks whether you already have a domain:
+**3b. Your domain.** The agent asks you at the start, because the Stripe link (B6) and the email add-on (C1) are built on your final address, and changing it later means redoing them. It asks whether you already have a domain:
 - **No.** Buy it on Cloudflare. The agent offers to drive Chrome: Cloudflare dashboard → **Domain Registration → Register Domains**. It searches names based on what you sell and shows you a shortlist with the yearly price of each. It looks for names that are short, easy to say out loud and to spell, with no hyphens, and `.com` first. Cloudflare sells at cost and doesn't raise the price at renewal, and WHOIS privacy is free. **YOU** pick one and buy it: the agent stops before the card, the contact details and the Purchase button.
 - **Yes, bought somewhere else** (GoDaddy, Namecheap…). Move it to Cloudflare, where renewals cost what Cloudflare pays for them, with nothing on top. The agent walks you through it:
   1. Cloudflare → **Add a domain** (Free plan). **YOU** change the nameservers at your current registrar to the two Cloudflare shows. This alone is enough for the kit to work, and takes minutes to a few hours.
@@ -72,12 +73,25 @@ Now do **A** (Gumroad) or **B** (Stripe).
 
 ## A. Gumroad
 
-**A1. The product (YOU, or the agent in Chrome).** Gumroad → **Products → New product → Digital product**. Name, price, description, cover image, and upload your file as the content. Publish. You don't configure tax: Gumroad does it.
+**A1. Payouts first (YOU).** Gumroad → **Payouts**: connect your bank account or PayPal. Gumroad won't publish any product, not even a free one, until this is done.
 
-**A2. The button.** Copy the product's link (`https://<you>.gumroad.com/l/<id>`) into the buy button's `href` in `site/index.html`. Deploy.
+**A2. The product (the agent can do it in Chrome, except the last click).**
+1. Gumroad → **Products → New product**. Enter the name, pick **E-book** for a PDF (or **Digital product** for anything else), set the price, and click **Next: Customize**.
+2. Add the description and cover, then **Save and continue**.
+3. On **Content**, upload your file.
+4. **Publish and continue** (YOU).
+
+You don't configure tax: Gumroad does it.
+
+**A3. The button.** Copy the product's link (`https://<you>.gumroad.com/l/<id>`) into the buy button's `href` in `site/index.html`. Then check it and deploy:
+```bash
+node scripts/check-buy-links.mjs    # every buy button must point at a real checkout
+npx wrangler deploy
+```
+The script can't see inside a Gumroad page, so it also asks you to open the link in a private window, logged out. You must see the price and the buy button: an unpublished product loads fine but can't be bought.
 Optional: add `<script src="https://gumroad.com/js/gumroad.js"></script>` to the page, and the checkout opens as an overlay on your page instead of on a new page.
 
-**A3. Test it.** While **logged in to Gumroad**, open your own product and buy it: the payment method shows **Test card** and nothing is charged. You get the sale email and the buyer email, and can check the download. A 100%-off discount code also works.
+**A4. Test it.** While **logged in to Gumroad**, open your own product and buy it: the payment method shows **Test card** and nothing is charged. You get the sale email and the buyer email, and can check the download. A 100%-off discount code also works.
 ⚠️ **Never buy your own product with a real card.** Gumroad may treat it as fraud and suspend the account.
 
 That's it. Emails: Gumroad already sends the buyer the receipt and the download, and **Emails** in Gumroad lets you write to your customers later. For people who aren't buying yet, a free ($0) Gumroad product works as a lead magnet: they leave their email to get it.
@@ -93,6 +107,7 @@ Everything is done in a **sandbox** (fake money) first, then repeated live in B8
 **B1. Sandbox and CLI (YOU).**
 - Stripe Dashboard → the account menu (top left) → **Sandboxes → Create**.
 - If your Stripe CLI is v1.50 or newer, an account admin first allows it: **Settings → Team and security → MCP and CLI access**.
+- Don't upgrade the Stripe CLI in the middle of setup: from v1.50 an account admin must first allow it (next line).
 - `stripe whoami` shows whether you're logged in, and to which account. If not: `stripe login`, and pick the sandbox in the browser window that opens. The login lasts about 90 days.
 
 **B2. Turn on Managed Payments (YOU, or the agent in Chrome).** In the sandbox: [Settings → Managed Payments](https://dashboard.stripe.com/settings/managed-payments), accept the terms.
@@ -121,9 +136,10 @@ npx wrangler r2 object put my-shop-files/my-product.pdf --file private/my-produc
 4. Click **Copy and close**, so the key is on your clipboard and not on screen. Then send it from the clipboard to Cloudflare, and empty the clipboard:
    - Mac: `pbpaste | npx wrangler secret put STRIPE_READ_KEY; pbcopy </dev/null`
    - Windows (PowerShell): `Get-Clipboard | npx wrangler secret put STRIPE_READ_KEY; Set-Clipboard -Value $null`
+   - If you're clicking and the agent runs the command: click **Copy and close**, copy nothing else, and tell the agent "copied". It runs the command straight away.
 5. Don't save the key anywhere else. If you ever need it again, make a new one, and expire the old one (**⋯ → Expire key**).
 
-**B6. The Payment Link.** It sends the buyer to your `/thanks` page after paying. Use your workers.dev address or your domain:
+**B6. The Payment Link.** (It doesn't need the key from B5, so it can be done while you wait on that.) It sends the buyer to your `/thanks` page after paying. Use your workers.dev address or your domain:
 
 ```bash
 stripe payment_links create --stripe-version 2026-04-22.dahlia \
@@ -135,8 +151,13 @@ stripe payment_links create --stripe-version 2026-04-22.dahlia \
 ```
 
 Type `{CHECKOUT_SESSION_ID}` exactly as it is: Stripe fills it in. The answer has an `id` (`plink_...`) and a `url` (`https://buy.stripe.com/...`).
-- Put the `plink_...` id in `PRODUCTS` in `wrangler.jsonc`, with the file name from B4.
+- Put the `plink_...` id in `PRODUCTS` in `wrangler.jsonc`, with all three fields:
+  - `file`: the name in the bucket, from B4
+  - `name`: the file name the buyer's computer saves, for example `Sourdough-for-Busy-People.pdf`
+  - `title`: what the thank-you page calls it
+- If creating the link fails with an error about Managed Payments, the terms from B2 aren't accepted yet.
 - Put the `https://buy.stripe.com/...` url on the buy button.
+- `node scripts/check-buy-links.mjs --site https://YOUR-SITE` asks Stripe whether each buy button's link is active, has Managed Payments on, sends buyers to your `/thanks`, and is listed in `PRODUCTS`. Fix whatever it reports.
 - `npx wrangler deploy`.
 
 (In the Dashboard instead: **Payment Links → New**, tick **Enable Managed Payments**, and under **After payment** choose to redirect to that same URL. Managed Payments can't be switched on for a link that already exists: make a new one.)
@@ -165,7 +186,7 @@ If the thank-you page says "paused", the key or one of its three permissions is 
 1. Activate your Stripe account (business details, bank account), and accept Managed Payments in **live** mode too.
 2. `stripe login` again, this time choosing the live account.
 3. Redo B3 and B6 with `--live` added to each command, and redo B5 in live mode (the key starts `rk_live_`).
-4. Replace the sandbox `plink_...` in `PRODUCTS` and the button's link with the live ones. Deploy.
+4. Replace the sandbox `plink_...` in `PRODUCTS` and the button's link with the live ones. Run `node scripts/check-buy-links.mjs --live --site https://YOUR-SITE`: it fails if any sandbox link is left. Deploy.
 5. Buy it once with your own real card, check the download, and refund yourself from the Dashboard.
 
 **B9. When a buyer loses the link.** They write to you. You (or the agent) run:
@@ -175,6 +196,35 @@ stripe checkout sessions list --live -d "customer_details[email]=buyer@example.c
 ```
 
 and send them `https://YOUR-SITE/thanks?session_id=<the cs_live_... id>`. It works for `DOWNLOAD_DAYS` (30) after the purchase; for an older one, send the file by hand. Or add C1, so it doesn't happen.
+
+---
+
+## Day to day
+
+- **New version of the file.**
+  - Gumroad: upload it on the product's **Content** tab. Existing buyers get it in their library.
+  - Stripe: upload it again under the same name (B4). Every current download link serves the new file.
+- **New price.**
+  - Gumroad: change it on the product.
+  - Stripe: a link's price can't be changed.
+    1. Make a new price and a new Payment Link (B3, B6).
+    2. Put the new `plink_...` in `PRODUCTS`, but **keep the old entry too**, so people who bought through it can still download.
+    3. Put the new link on the button, run the check, and deploy.
+    4. Deactivate the old link in Stripe.
+- **A second product.**
+  - Gumroad: a new product and its own button.
+  - Stripe: B3, B4 and B6 again, one more entry in `PRODUCTS`, a second button, then the check and a deploy.
+- **Changed the page?** Run `node scripts/check-buy-links.mjs` before every deploy.
+- **Sales, refunds, buyers:** all in the Gumroad or Stripe dashboard. The kit keeps no records of its own.
+
+## Legal basics (not legal advice)
+
+The merchant of record (Gumroad, or Stripe with Managed Payments) is the seller in the buyer's eyes for the payment. It handles the checkout terms, tax, invoices and the EU rules on buying digital content. You still need a few things on your page:
+- **A way to reach you**, and **your refund policy**, in the footer. Stripe also looks for these when it reviews your account for going live.
+- **Your legal name and address**, in countries that require it on commercial sites, such as Germany and Austria (an *Impressum*).
+- **A privacy note** saying what you collect and why, if you add the signup form (C2) or anything else that stores personal data. Without C2 the page stores nothing, but a one-line note ("this site has no cookies and no tracking") is still good practice.
+
+The agent can write these from your answers. Have them checked if your situation is unusual.
 
 ---
 

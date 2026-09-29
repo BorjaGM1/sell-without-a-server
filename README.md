@@ -11,7 +11,7 @@ There's no box to SSH into, no database to run (the optional signup list uses Cl
 
 ## Use it
 
-1. Download this repo and open the folder in [Claude Code](https://claude.com/claude-code) (or your agent of choice).
+1. Download the latest **release** (a tagged version such as `v1.0`, from the Releases page, or `git clone --branch v1.0 …`), and open the folder in [Claude Code](https://claude.com/claude-code) or your agent of choice. A release is a fixed version: what you read is what runs.
 2. Say: **"Follow GUIDE.md to set up my shop. I sell ___ for $__."**
 3. The agent does the steps and stops whenever it needs you: to log in, click Allow, enter a card, or paste a key. It never sees your passwords or keys (see `AGENTS.md`).
 
@@ -26,6 +26,7 @@ Prefer doing it by hand? `GUIDE.md` is written for people who have never used a 
 | `site/` | Your landing page goes here (the agent writes it) |
 | `src/worker.js` | The thank-you page and file download (Stripe path), and the optional add-ons |
 | `scripts/add-webhook.sh` | Add-on C1: creates the Stripe webhook without showing its secret |
+| `scripts/check-buy-links.mjs` | Checks every buy button points at a real, working checkout (Stripe links are checked with Stripe itself) |
 | `scripts/export-subscribers.sh`, `migrations/` | Add-on C2: the signup list's table, and its CSV export |
 | `wrangler.jsonc` | Cloudflare settings: name, domain, products |
 | `.claude/skills/` | For the agent: tool install and login steps, and known dashboard click paths |
@@ -42,4 +43,6 @@ Prefer doing it by hand? `GUIDE.md` is written for people who have never used a 
 | Your signup form (add-on C2) | Try to flood it with bots | Turnstile, a honeypot, same-site only, an hourly cap |
 | A server | Nothing: there isn't one | |
 
-Don't update by blindly pulling and running a new version: read the diff first.
+Don't update by blindly pulling and running a new version: move to a new release tag on purpose, and read the diff first (`git diff v1.0 v1.1`).
+
+MIT licensed (`LICENSE`).

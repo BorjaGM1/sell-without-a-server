@@ -72,9 +72,14 @@ If an existing key shows **Full access** and is used only to send, suggest repla
 
 ## Gumroad
 
-- **Product:** **Products → New product** → **Digital product**, then name and price.
-  - Upload the file as the content, add the description and cover, and **Publish**.
-  - The agent can fill all of this from what they told you at the start. Publishing is theirs.
+- **Payouts first:** Settings or **Payouts** → connect a bank account or PayPal (the person's). Until then Gumroad refuses to publish anything, even a $0 product: "You must connect at least one payment method before you can publish this product for sale." ✅
+- **Product** ✅:
+  1. **Products → New product**. Enter the Name. Pick **E-book** (PDF, ePub) or **Digital product** (anything else). Enter the Price, then **Next: Customize**.
+  2. Add the description and cover → **Save and continue**.
+  3. **Content** tab: upload the file. The file input takes an upload directly; there's no need to click the button.
+  4. **Publish and continue** is the person's click.
+  - The agent can fill everything else from what they told you at the start.
+- **Remove a product:** Products → **⋯** on its row → **Archive**. "Delete permanently" is the person's call. ✅
 - **Test purchase:** while logged in, open the product page and buy it; the payment method shows **Test card**. Never with a real card: Gumroad may suspend the account.
 - **Payouts:** Settings → **Payments**. Bank or PayPal details are the person's.
-- **Buy button:** the product's share link (`https://<user>.gumroad.com/l/<id>`) goes in the page's button.
+- **Buy button:** the product's link (`https://<user>.gumroad.com/l/<id>`, shown under its name in the list) goes in the page's button. An unpublished or archived product's link still loads (HTTP 200), so check it in a private window: it must show the price and the buy button.
