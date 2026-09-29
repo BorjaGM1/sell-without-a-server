@@ -2,7 +2,7 @@
 
 You end up with a landing page on Cloudflare (free), a buy button, and either Gumroad or Stripe taking the money, the tax and the receipts. No server to rent, patch or log into.
 
-Steps marked **YOU** are yours: logins, cards, bank details, anything that asks for a password or a 2FA code. An agent (Claude Code, with Claude in Chrome for dashboard pages) can do everything else and should stop at every **YOU**. Checked against the docs and a real sandbox on 2026-09-29.
+Steps marked **YOU** are yours: logins, cards, bank details, anything that asks for a password or a 2FA code. An agent (Claude Code, with Claude in Chrome for dashboard pages) can do everything else and should stop at every **YOU**. Tested end to end in a Stripe sandbox on 2026-09-29: purchase, download, refund (the link closes), free copy with a 100%-off code, and the three permissions of the read-only key.
 
 ## Pick one: Gumroad or Stripe
 
@@ -107,14 +107,14 @@ npx wrangler r2 object put my-shop-files/my-product.pdf --file private/my-produc
 
 `my-shop-files` is the bucket name in `wrangler.jsonc`: if the bucket doesn't exist yet, run `npx wrangler deploy` once first and it is created. The file is only reachable through `/download`, after a paid checkout.
 
-**B5. The read-only key (YOU click, the agent can drive Chrome).** This is the Worker's only secret, and it can only *read*.
-1. Dashboard (still in the sandbox) → **Developers → API keys → Create restricted key**, and choose to use it for your own integration.
-2. Name it `download-worker`. Set **Checkout Sessions: Read**, **PaymentIntents: Read**, **Charges: Read**. Leave everything else at **None**.
-3. **Create**, then copy the key (`rk_test_...`).
-4. In the terminal run `npx wrangler secret put STRIPE_READ_KEY`, paste it when asked, and press Enter.
-5. Close the page. Don't save the key anywhere else: if you ever need it again, make a new one and delete the old one.
-
-If an agent is driving the browser, it stops at step 3: you copy and paste, so the key never passes through the agent.
+**B5. The read-only key.** This is the Worker's only secret, and it can only *read*. The agent can do all of it in Chrome, and the key never passes through the chat.
+1. Dashboard (still in the sandbox) → **Developers → API keys → Create secret key**.
+2. **Build your own integration** → **Custom permissions**. Use the search box to set three permissions to **Read**: **Checkout Sessions**, **Payment Intents**, **Charges and Refunds**. Leave everything else at **None**.
+3. Name it `download-worker`, then **Create key**.
+4. Click **Copy and close**, so the key is on your clipboard and not on screen. Then send it from the clipboard to Cloudflare, and empty the clipboard:
+   - Mac: `pbpaste | npx wrangler secret put STRIPE_READ_KEY; pbcopy </dev/null`
+   - Windows (PowerShell): `Get-Clipboard | npx wrangler secret put STRIPE_READ_KEY; Set-Clipboard -Value $null`
+5. Don't save the key anywhere else. If you ever need it again, make a new one, and expire the old one (**⋯ → Expire key**).
 
 **B6. The Payment Link.** It sends the buyer to your `/thanks` page after paying. Use your workers.dev address or your domain:
 
@@ -144,7 +144,12 @@ Type `{CHECKOUT_SESSION_ID}` exactly as it is: Stripe fills it in. The answer ha
 
 Any future expiry date, any CVC, any postcode. You should land on **Thank you → Download** and get the file. Then check the ways it should refuse:
 - **Refund** the test payment in the Dashboard. The same thank-you link now says the purchase was refunded.
-- **Free copies:** make a 100%-off promotion code (**Product catalog → Coupons**) and check out with it. The download works, with no card.
+- **Free copies:** make a 100%-off promotion code and check out with it. The download works, with no card:
+  ```bash
+  stripe coupons create -d "percent_off=100" -d "duration=once" -d "name=Free copy"
+  stripe promotion_codes create -d "promotion[type]=coupon" -d "promotion[coupon]=<the coupon id>" -d "code=FREECOPY"
+  ```
+  Stripe still asks for a name and a billing address, because tax depends on where the buyer is.
 - The sandbox doesn't send receipt emails by itself: you can send one from the payment's page.
 
 If the thank-you page says "paused", the key or one of its three permissions is wrong (redo B5). If it says "not valid", the `plink_...` in `PRODUCTS` doesn't match the link you bought through. `npx wrangler tail` shows the Worker's log live while you retry.
@@ -166,7 +171,7 @@ and send them `https://YOUR-SITE/thanks?session_id=<the cs_live_... id>`. It wor
 
 **B10. Optional: email buyers their link.** Stripe's receipt doesn't include the download, so a buyer who closes the tab has to write to you. This add-on emails them the thank-you link right after they pay, through [Resend](https://resend.com) (free up to 3,000 emails a month, 100 a day). It needs **your own domain** (step 3), and adds two secrets: a Stripe webhook secret and a Resend key that can only send.
 1. **YOU:** make a Resend account and turn on 2FA. **Domains → Add domain**, and enter your domain. Resend shows a few DNS records: let it add them to Cloudflare if it offers to, or add them yourself in Cloudflare → your domain → **DNS**. Wait until Resend says **Verified**.
-2. **YOU (the agent can drive Chrome):** Resend → **API Keys → Create API key**. Permission **Sending access**, domain **only yours**. Create, copy, then run `npx wrangler secret put RESEND_API_KEY` and paste it. Close the page.
+2. **YOU (the agent can drive Chrome):** Resend → **API Keys → Create API key**. Permission **Sending access**, domain **only yours**. Create it, copy it with Resend's copy button, and send it the same way as in B5: `pbpaste | npx wrangler secret put RESEND_API_KEY; pbcopy </dev/null` (on Windows, the `Get-Clipboard` version).
 3. In `wrangler.jsonc`, set `"EMAIL_FROM": "Your Shop <orders@yourdomain.com>"` (any name @ your verified domain). Deploy.
 4. `scripts/add-webhook.sh https://yourdomain.com` creates the Stripe webhook and stores its secret without showing it.
 5. Test with a sandbox purchase (B7), using an email address you can read: the email arrives within a minute. **Stripe → Developers → Webhooks** shows each delivery. If one failed, Stripe retries it for three days.
@@ -181,6 +186,6 @@ The Worker doesn't trust what the webhook says: it asks Stripe about the purchas
 - **2FA everywhere** (step 1). There is no server to hack, so an attacker goes after your accounts.
 - **The one secret** is the read-only Stripe key, stored as a Cloudflare secret. With it, someone could read your orders and buyers' emails, but not charge, refund, change products or move money. If you suspect it leaked, delete it in Stripe and redo B5.
 - **With B10**, two more secrets. The Resend key can only send email, but it can send it *as your domain*, which makes it useful for phishing your buyers. If you suspect a leak, delete it in Resend and make a new one. The webhook secret is close to worthless on its own (see B10).
-- **Your CLI logins** (`wrangler login`, `stripe login`) are powerful and live on your computer. Log out when you're done: `npx wrangler logout`, `stripe logout`.
+- **Your CLI logins are the most powerful keys in this setup.** `stripe login` leaves a *full-access* key on your computer (you'll see it in the Dashboard as "CLI key for <your computer>"), and `wrangler login` can change anything on Cloudflare. Log out when you're done: `stripe logout`, `npx wrangler logout`.
 - **Links can be shared.** A buyer can pass their thank-you link to a friend for 30 days. Lower `DOWNLOAD_DAYS` if that matters to you; Gumroad has the same trade-off.
 - **Updating this kit:** don't blindly pull a newer version and run it (or let an agent do so). Look at what changed first (`git diff`), especially `src/worker.js`.

@@ -51,7 +51,7 @@ async function check(env, sid) {
   if (!product) return page(env, 404, "This link is not valid.");
   if (s.status !== "complete") return page(env, 402, "This checkout was not finished.");
   if (s.payment_status === "unpaid") return page(env, 402, "Your payment is still processing. Try this link again in a little while.");
-  // "paid", or "no_payment_required" (a 100%-off promotion code: free copies, and free test purchases)
+  // A 100%-off promotion code (free copies, free tests) comes back "paid" with no charge, or "no_payment_required"
   const charge = s.payment_intent && s.payment_intent.latest_charge;
   if (charge && (charge.refunded || charge.disputed)) return page(env, 410, "This purchase was refunded or disputed, so the download is closed.");
   const days = Number(env.DOWNLOAD_DAYS || 30);
