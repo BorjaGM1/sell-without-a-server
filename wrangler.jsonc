@@ -14,7 +14,8 @@
     "run_worker_first": ["/thanks", "/download", "/stripe/webhook"]
   },
 
-  // EDIT (optional): your own domain, once it is on Cloudflare. Remove the // at the start of the line.
+  // Your own domain (GUIDE.md 3b: the agent asks you, and can help find and check one on Cloudflare).
+  // Once it is on Cloudflare, put it here and remove the // at the start of the line.
   // "routes": [{ "pattern": "example.com", "custom_domain": true }],
 
   // ---- Stripe path only. On the Gumroad path, leave everything below as it is. ----

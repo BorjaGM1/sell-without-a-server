@@ -15,6 +15,10 @@ You are helping a non-technical person sell a digital file from a static site on
 - Never switch Stripe to live mode, buy a domain, or change payout or bank settings yourself. Those are **YOU** steps.
 - Never run `git pull` on this kit and then execute it without showing the person the diff first.
 
+## Ask, don't assume
+
+Before Stripe or the email add-on, ask whether they have a domain (`GUIDE.md` 3b). If they don't, offer to drive Chrome to Cloudflare's **Register Domains** and search for names that fit what they sell. Then give a shortlist with prices and let them choose. Only they buy it.
+
 ## In the browser (Claude in Chrome)
 
 Some steps have no CLI: Managed Payments, restricted keys, branding, domain purchase, and all of Gumroad. If you can drive the browser, open the page, fill in what `GUIDE.md` says, and **hand over to the person** for anything that asks for a password, 2FA, a card, bank details, legal identity, or a final "Buy" / "Activate" / "Create key" confirmation. When a key is shown on screen, do not read or copy it: tell the person to copy it into the terminal prompt themselves.
@@ -22,5 +26,5 @@ Some steps have no CLI: Managed Payments, restricted keys, branding, domain purc
 ## Checking your work
 
 - After a deploy, open the site in the browser, not just `curl`. A Worker route like `/download` only runs if `run_worker_first` covers it.
-- Test purchases use sandbox mode with the test card `4242 4242 4242 4242` (Stripe), or a 100%-off code (Gumroad). Say so each time, so a real card never goes into a test.
+- Test purchases use sandbox mode with the test card `4242 4242 4242 4242` (Stripe), or, on Gumroad, buying your own product while logged in (it shows **Test card**). Say so each time, so a real card never goes into a test.
 - A domain that was just added can look dead from this machine for a few minutes (local DNS cache). Check with `dig @1.1.1.1 <domain>` before changing anything.

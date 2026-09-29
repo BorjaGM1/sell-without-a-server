@@ -52,7 +52,12 @@ npx wrangler deploy
 
 It prints your address, `https://<name>.<you>.workers.dev`. Open it. Every change to `site/` is another `npx wrangler deploy`.
 
-**Your own domain (optional, YOU):** buy one in the Cloudflare dashboard (**Domain Registration → Register Domains**; Cloudflare sells at cost), or move an existing one to Cloudflare. Then uncomment the `"routes"` line in `wrangler.jsonc`, put your domain in it, and deploy again. A brand-new domain can take a few minutes to answer; if it looks dead from your computer but `dig @1.1.1.1 yourdomain.com` shows an address, it's your computer's DNS cache, not the site.
+**3b. Your domain.** The agent asks you now, because the Stripe link (B6) and the email add-on (B10) are built on your final address, and changing it later means redoing them. It asks whether you already have a domain:
+- **No.** The agent offers to drive Chrome: Cloudflare dashboard → **Domain Registration → Register Domains**. It searches names based on what you sell and shows you a shortlist with the yearly price of each. It looks for names that are short, easy to say out loud and to spell, with no hyphens, and `.com` first. Cloudflare sells at cost and doesn't raise the price at renewal, and WHOIS privacy is free. **YOU** pick one and buy it: the agent stops before the card, the contact details and the Purchase button.
+- **Yes, bought somewhere else** (GoDaddy, Namecheap…). Keep it registered there, but let Cloudflare run it: Cloudflare → **Add a domain** (Free plan), then **YOU** change the nameservers at your registrar to the two Cloudflare shows. It takes minutes to a few hours.
+- **Not now.** The `workers.dev` address works for everything except the email add-on (B10). Stripe's link can be remade later.
+
+Then the agent puts the domain in the `"routes"` line of `wrangler.jsonc` and deploys again. A brand-new domain can take a few minutes to answer. If it looks dead from your computer but `dig @1.1.1.1 yourdomain.com` shows an address, it's your computer's DNS cache, not the site.
 
 Now do **A** (Gumroad) or **B** (Stripe).
 
