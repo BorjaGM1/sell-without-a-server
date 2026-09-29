@@ -12,7 +12,7 @@ umask 077; TMP="$(mktemp)"; trap 'rm -f "$TMP"' EXIT
 stripe webhook_endpoints create -d "url=${SITE%/}/stripe/webhook" \
   -d "enabled_events[]=checkout.session.completed" \
   -d "enabled_events[]=checkout.session.async_payment_succeeded" \
-  -d "description=download emails (digital-product-kit)" $LIVE > "$TMP" 2>&1 || true
+  -d "description=download emails (sell-without-a-server)" $LIVE > "$TMP" 2>&1 || true
 
 SECRET="$(node -e '
   const t = require("fs").readFileSync(process.argv[1], "utf8"); let d = {};

@@ -1,4 +1,4 @@
-# Digital product kit
+# Sell without a server
 
 Sell a PDF, template or any other file from your own page, **without a server**.
 

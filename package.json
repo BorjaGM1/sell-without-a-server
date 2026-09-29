@@ -1,5 +1,5 @@
 {
-  "name": "digital-product-kit",
+  "name": "sell-without-a-server",
   "private": true,
   "scripts": {
     "dev": "wrangler dev",
