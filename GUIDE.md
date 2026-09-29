@@ -67,6 +67,20 @@ It prints your address, `https://<name>.<you>.workers.dev`. On a brand-new Cloud
 
 Then the agent puts the domain in the `"routes"` line of `wrangler.jsonc` and deploys again. A brand-new domain can take a few minutes to answer. If it looks dead from your computer but `dig @1.1.1.1 yourdomain.com` shows an address, it's your computer's DNS cache, not the site.
 
+**3c. Your shop's email (optional, needs your domain).** It gives you an address like `hello@yourdomain.com` that lands in the inbox you already use. It's free and takes 2 minutes; the agent can do it in Chrome.
+1. Cloudflare → your domain → **Email → Email Routing** → enable it. Cloudflare adds the DNS records itself.
+2. Add your real inbox as a destination (**YOU**: click the confirmation email Cloudflare sends there).
+3. Send `hello@` (or a catch-all, so any address works) to that inbox.
+4. Put that address in `"SUPPORT_EMAIL"` and in your page's footer, and send it a test email.
+
+It only *receives*: if you reply from Gmail, the buyer sees your Gmail address. To reply as `hello@yourdomain.com`, and only if you set up Resend (add-on C1):
+- In Resend, make one more **Sending access** key, just for Gmail.
+- In Gmail: **Settings → Accounts and Import → Send mail as → Add another email address**.
+  - Server `smtp.resend.com`, port `465` (SSL)
+  - Username `resend`
+  - Password: that key, pasted by you
+- To stop, delete the key in Resend.
+
 Now do **A** (Gumroad) or **B** (Stripe).
 
 ---

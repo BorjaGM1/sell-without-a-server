@@ -9,7 +9,7 @@ Most people arrive with part of it done: a finished file, a landing page, a Gumr
 1. What are you selling, for how much, and who is it for? What do you already have: the file, a cover image, a landing page (where?), a Gumroad or Stripe account or product, a domain?
 2. Which country are you selling from? Stripe Managed Payments only works in some (`GUIDE.md`, "Pick one"). If theirs isn't on the list, it's Gumroad.
 3. Gumroad or Stripe, if they haven't chosen? Explain the trade-off in two lines (`GUIDE.md`, "Pick one"), and recommend Gumroad unless the fees matter to them.
-4. What email should buyers write to? It goes in the footer and on the download pages (`SUPPORT_EMAIL`), and it should be one they read. Their refund policy, in one sentence.
+4. What email should buyers write to? It goes in the footer and on the download pages (`SUPPORT_EMAIL`), and it should be one they read. If they'll have their own domain, offer an address on it that forwards to their inbox (`GUIDE.md` 3c). Their refund policy, in one sentence.
 5. No domain yet? Offer to search Cloudflare's **Register Domains** in Chrome for names that fit what they sell, and bring back a shortlist with prices. They choose and buy (`GUIDE.md` 3b). "Not now" is fine too.
 6. Can I drive your browser (Claude in Chrome) for the dashboard steps? I'll stop at every password, card, and final Buy or Activate. In the Stripe sandbox, can I also click Create on the test key myself? (Live keys are always theirs.)
 7. Mac or Windows? (A few commands differ.)

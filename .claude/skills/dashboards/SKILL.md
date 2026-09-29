@@ -54,7 +54,12 @@ Before handing over, get them as close as you can: open the page and fill in eve
   3. The *site key* is public and goes in the form's `data-sitekey`.
   4. Copy the *secret key* with its copy button, then run the clipboard pipe into `TURNSTILE_SECRET`.
   - For tests, Cloudflare's public test secrets are `1x0000000000000000000000000000000AA` (always passes) and `2x0000000000000000000000000000000AA` (always fails), with the token `XXXX.DUMMY.TOKEN.XXXX`. Never leave a test secret on a live site.
-- **Email to their domain** (the footer's contact address): their domain → **Email → Email Routing** → enable → add their real inbox as the destination → catch-all.
+- **Email to their domain** (3c):
+  1. Their domain → **Email → Email Routing** → enable. Cloudflare adds the MX and SPF records.
+  2. **Destination addresses** → add their real inbox. Cloudflare emails it a confirmation link, and the person clicks it.
+  3. **Routing rules**: `hello@` → that inbox, or turn on the catch-all.
+  4. Ask them to send a test email and confirm it arrived; you can't see their inbox.
+  - It only receives. Replying as the shop needs an SMTP sender. With C1, that's Resend: `smtp.resend.com`, port 465, user `resend`, password = a separate Sending-access key, which the person pastes into Gmail's **Send mail as** themselves.
 
 ## Resend (C1)
 
