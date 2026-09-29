@@ -1,0 +1,36 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // EDIT: a short name for your shop (lowercase, dashes). It becomes <name>.<you>.workers.dev
+  "name": "my-shop",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-01",
+
+  // Your landing page. Cloudflare serves it as-is; the Worker code only runs for /thanks and /download.
+  "assets": {
+    "directory": "./site",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/thanks", "/download"]
+  },
+
+  // EDIT (optional): your own domain, once it is on Cloudflare. Remove the // at the start of the line.
+  // "routes": [{ "pattern": "example.com", "custom_domain": true }],
+
+  // ---- Stripe path only. On the Gumroad path, leave everything below as it is. ----
+  "vars": {
+    // One entry per product: the Stripe Payment Link id (plink_...) → the file in the bucket.
+    // title is shown on the thank-you page; name is the file name the buyer's computer saves.
+    // Sandbox and live links have different ids: going live means updating this.
+    "PRODUCTS": {
+      "plink_REPLACE_ME": { "file": "my-product.pdf", "name": "My-Product.pdf", "title": "My Product" }
+    },
+    "DOWNLOAD_DAYS": "30",
+    "SUPPORT_EMAIL": "you@example.com"
+  },
+  // The private bucket that holds your product file. Nothing in it is public; only /download reads it.
+  "r2_buckets": [{ "binding": "FILES", "bucket_name": "my-shop-files" }],
+  // Secret (never in this file): STRIPE_READ_KEY, set with `npx wrangler secret put STRIPE_READ_KEY`.
+
+  "observability": { "enabled": true }
+}

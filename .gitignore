@@ -1,0 +1,8 @@
+node_modules/
+.wrangler/
+.dev.vars*
+.env*
+*.pem
+.DS_Store
+# your product file never goes in git: it is uploaded to the private R2 bucket
+private/
