@@ -4,12 +4,15 @@ You are helping a non-technical person sell a digital file from a static site on
 
 ## Start: ask these first, in one message
 
-1. What are you selling, for how much, and who is it for? Do you have the file and a cover image?
-2. Gumroad or Stripe? Explain the trade-off in two lines (`GUIDE.md`, "Pick one") and recommend Gumroad unless the fees matter to them.
-3. Do you have a domain? Yes, no, or not now (`GUIDE.md` 3b). If not, offer to search Cloudflare's **Register Domains** in Chrome for names that fit what they sell, and bring back a shortlist with prices. They choose and buy.
-4. Do you already have a landing page somewhere else, or should I make one?
-5. Can I drive your browser (Claude in Chrome) for the dashboard steps? I'll stop at every password, card, and final Buy or Activate.
-6. Mac or Windows? (It changes one command.)
+Most people arrive with part of it done: a finished file, a landing page, a Gumroad product, a domain. Find out what exists before you plan anything, and skip the steps it covers.
+
+1. What are you selling, for how much, and who is it for? What do you already have: the file, a cover image, a landing page (where?), a Gumroad or Stripe account or product, a domain?
+2. Gumroad or Stripe, if they haven't chosen? Explain the trade-off in two lines (`GUIDE.md`, "Pick one"), and recommend Gumroad unless the fees matter to them.
+3. No domain yet? Offer to search Cloudflare's **Register Domains** in Chrome for names that fit what they sell, and bring back a shortlist with prices. They choose and buy (`GUIDE.md` 3b). "Not now" is fine too.
+4. Can I drive your browser (Claude in Chrome) for the dashboard steps? I'll stop at every password, card, and final Buy or Activate.
+5. Mac or Windows? (It changes one command.)
+
+If they already have a landing page, work with it: only the buy button (and, for C2, the form) has to change. If it's hosted elsewhere, only the Worker needs deploying (Stripe path); the landing can stay where it is.
 
 Before each step that runs `wrangler` or `stripe`, check the tool is installed and logged in, and fix it if not (`.claude/skills/tools/SKILL.md`).
 
@@ -18,7 +21,7 @@ Then **go as far as you can on your own**. When you reach a **YOU** step, stop a
 ## Never
 
 - **Never see, print, store or paste a secret.** That includes API keys, passwords, 2FA codes, recovery codes and webhook secrets. Logins (`npx wrangler login`, `stripe login`) are run by the person in their own browser. Card numbers are theirs too, except Stripe's published test cards in a sandbox.
-- **Keys go from the provider's copy button to Cloudflare through the clipboard, never through you.** In Chrome, click the page's own copy button (Stripe: **Copy and close**) by its label. Don't take a screenshot or read the page while a key is on screen. Then run `pbpaste | npx wrangler secret put <NAME>; pbcopy </dev/null`, or `Get-Clipboard | … ; Set-Clipboard -Value $null` on Windows. The value goes straight into the pipe without being printed. The webhook secret is handled by `scripts/add-webhook.sh`: never print its creation response yourself.
+- **Keys go from the provider's copy button to Cloudflare through the clipboard, never through you.** In Chrome, click the page's own copy button (Stripe: **Copy and close**) by its label. Don't take a screenshot or read the page while a key is on screen. Then run `pbpaste | npx wrangler secret put <NAME>; pbcopy </dev/null`, or `Get-Clipboard | … ; Set-Clipboard -Value $null` on Windows. The value goes straight into the pipe without being printed. If this doesn't work (no copy button, the clipboard command fails, a different terminal), don't improvise: ask the person to run `npx wrangler secret put <NAME>` in their own terminal and paste it there themselves. The webhook secret is handled by `scripts/add-webhook.sh`: never print its creation response yourself.
 - Never create a Stripe secret key (`sk_live_…`, `sk_test_…`) or any key with write permissions for the Worker. The Worker gets the read-only restricted key from `GUIDE.md` B5 and nothing else. The Resend key is **Sending access**, limited to the person's domain. In **live** mode, the person clicks **Create key**; in a sandbox you may, if they agreed at the start.
 - Never put the product file in `site/`: everything there is public. It goes in the private R2 bucket, which the first `npx wrangler deploy` creates by itself.
 - Never add a server, VPS or analytics script. The add-ons are in `GUIDE.md` section C, and each one is built only if the person says yes. If they ask for something else, explain what it would add to look after and let them decide.
@@ -35,7 +38,9 @@ Follow `GUIDE.md` exactly for whichever they pick, including every protection. F
 
 ## In the browser (Claude in Chrome)
 
-Some steps have no CLI: Managed Payments terms, restricted keys, branding, finding and buying a domain, Turnstile, Resend, and most of Gumroad. The known click paths, with what's been tested, are in `.claude/skills/dashboards/SKILL.md`. Open the page, do what it says, and **hand over** for anything that asks for a password, 2FA, a card, bank details, legal identity, or a final Buy / Activate / Publish in live mode. If Stripe's checkout asks whether you are an AI agent acting for someone, answer truthfully.
+Some steps have no CLI: Managed Payments terms, restricted keys, branding, finding and buying a domain, Turnstile, Resend, and most of Gumroad. The known click paths, with what's been tested, are in `.claude/skills/dashboards/SKILL.md`. Open the page, do what it says, and **hand over** for anything that asks for a password, 2FA, a card, bank details, legal identity, or a final Buy / Activate / Publish in live mode. Stripe's checkout has an "I am an AI agent acting on behalf of someone else" checkbox: when you're the one checking out, tick it.
+
+If Chrome won't screenshot a page (it can refuse a domain it hasn't been given permission for), read its title and text instead, or check it with curl.
 
 ## Checking your work
 

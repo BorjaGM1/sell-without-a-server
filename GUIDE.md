@@ -2,7 +2,7 @@
 
 You end up with a landing page on Cloudflare (free), a buy button, and either Gumroad or Stripe taking the money, the tax and the receipts. No server to rent, patch or log into.
 
-Steps marked **YOU** are yours: logins, cards, bank details, anything that asks for a password or a 2FA code. An agent (Claude Code, with Claude in Chrome for dashboard pages) can do everything else and should stop at every **YOU**. Tested end to end in a Stripe sandbox on 2026-09-29: purchase, download, refund (the link closes), free copy with a 100%-off code, and the three permissions of the read-only key.
+Steps marked **YOU** are yours: logins, cards, bank details, anything that asks for a password or a 2FA code. An agent (Claude Code, with Claude in Chrome for dashboard pages) can do everything else and should stop at every **YOU**. Tested end to end in a Stripe sandbox on 2026-09-29: purchase, download, refund (the link closes), free copy with a 100%-off code, and the three permissions of the read-only key. Add-on C1 (the email with the link, including a replayed webhook not sending twice) and C2 (the signup form and its abuse guards) were tested the same day.
 
 ## Pick one: Gumroad or Stripe
 

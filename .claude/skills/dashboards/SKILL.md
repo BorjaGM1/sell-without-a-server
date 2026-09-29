@@ -58,13 +58,17 @@ Before handing over, get them as close as you can: open the page and fill in eve
 
 ## Resend (C1)
 
+If an existing key shows **Full access** and is used only to send, suggest replacing it with a Sending-access key limited to the domain.
+
 - **Domain:** **Domains → Add domain**.
   - If it offers to configure Cloudflare automatically, let it; the person approves the Cloudflare prompt.
   - Otherwise, add the records it lists in Cloudflare → the domain → **DNS**.
   - Wait until it says **Verified**.
-- **Key:** **API Keys → Create API key**.
-  - Permission **Sending access**; domain: only theirs.
-  - Copy it with the page's copy button, then run the clipboard pipe.
+- **Key** ✅: **API keys → Create API key**.
+  - Name; Permission **Sending access**; Domain: only theirs → **Add**.
+  - The key is shown once: click the **Copy to clipboard** button by its label, then run the clipboard pipe.
+- **Delete a key** ✅: API keys → **More actions** on its row → **Delete API key**, then type the key's name to confirm.
+- **Check an email went out** ✅: **Emails** lists each one with its status (Delivered, Bounced…). Open one and pick **Plain Text** to see the body and the link.
 
 ## Gumroad
 

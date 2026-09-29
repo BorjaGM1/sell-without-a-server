@@ -47,5 +47,6 @@ Check each tool before the step that needs it, not all up front. Install what's 
 - **Live mode:** add `--live` at the end of the command.
 - **Managed Payments links:** add `-d "managed_payments[enabled]=true"` and `--stripe-version 2026-04-22.dahlia` or later. It can't be switched on for an existing link; make a new one.
 - **Promotion codes** on current API versions: `-d "promotion[type]=coupon" -d "promotion[coupon]=<id>"`. The old top-level `coupon=` fails with "unknown parameter".
+- **Replaying a webhook event** (to test C1): `stripe events resend <evt_…> --webhook-endpoint <we_…>`. Passing it as `-d "webhook_endpoint=…"` fails.
 - **Finding a buyer's purchase:** `stripe checkout sessions list -d "customer_details[email]=<email>"`.
 - **Free copies:** a 100%-off purchase under Managed Payments comes back `payment_status: "paid"` with no `payment_intent`. The Worker accepts it.
