@@ -11,14 +11,14 @@ Steps marked **YOU** are yours: logins, cards, bank details, anything that asks 
 **Stripe if you want lower fees**, and you're in a country where [Stripe Managed Payments](https://docs.stripe.com/payments/managed-payments/eligibility) works (US, Canada, UK, most of the EU, Switzerland, Norway, Australia, Japan, Singapore, Hong Kong). Managed Payments makes Stripe the merchant of record too, so tax is handled. What Stripe doesn't do is host your file or send the buyer their download. This kit does both:
 - The file sits in a private Cloudflare bucket.
 - One small Worker checks the payment with a read-only key and serves the file.
-- Emailing the link is an optional add-on (B10).
+- Emailing the link is an optional add-on (C1).
 
 | On a $19 sale (US card) | Gumroad | Stripe + Managed Payments |
 |---|---|---|
 | Fees | 10% + $0.50, plus 2.9% + $0.30 processing ≈ **$3.25** | 2.9% + $0.30 processing, plus 3.5% ≈ **$1.52** |
 | Tax (VAT / sales tax) | Gumroad | Stripe |
 | Hosts the file | Gumroad | This kit: a private Cloudflare bucket |
-| Gives the buyer the download | Gumroad: the download page, and an email with the link | This kit: a download page. The email with the link is optional (B10); Stripe's receipt doesn't include it |
+| Gives the buyer the download | Gumroad: the download page, and an email with the link | This kit: a download page. The email with the link is optional (C1); Stripe's receipt doesn't include it |
 | Code you run | None | One Worker, under 200 lines |
 | Setup | ~15 minutes | ~1 hour |
 
@@ -39,7 +39,7 @@ One page in `site/`: `index.html` plus its images. Tell the agent what you sell,
 The page's rules:
 - The buy button is a plain link to your Gumroad product or Stripe Payment Link (steps A2 and B6). While you don't have it yet, use `#`.
 - Everything in `site/` is public. **Never put the product file in `site/`.**
-- No forms, no trackers, no scripts that aren't needed. The page sells; Gumroad or Stripe does everything else.
+- No trackers, and no forms or scripts that aren't needed (the one exception is the signup form, add-on C2). The page sells; Gumroad or Stripe does everything else.
 
 ## 3. Put it online (Cloudflare)
 
@@ -57,12 +57,12 @@ npx wrangler deploy
 
 It prints your address, `https://<name>.<you>.workers.dev`. Open it. Every change to `site/` is another `npx wrangler deploy`.
 
-**3b. Your domain.** The agent asks you now, because the Stripe link (B6) and the email add-on (B10) are built on your final address, and changing it later means redoing them. It asks whether you already have a domain:
+**3b. Your domain.** The agent asks you now, because the Stripe link (B6) and the email add-on (C1) are built on your final address, and changing it later means redoing them. It asks whether you already have a domain:
 - **No.** Buy it on Cloudflare. The agent offers to drive Chrome: Cloudflare dashboard → **Domain Registration → Register Domains**. It searches names based on what you sell and shows you a shortlist with the yearly price of each. It looks for names that are short, easy to say out loud and to spell, with no hyphens, and `.com` first. Cloudflare sells at cost and doesn't raise the price at renewal, and WHOIS privacy is free. **YOU** pick one and buy it: the agent stops before the card, the contact details and the Purchase button.
 - **Yes, bought somewhere else** (GoDaddy, Namecheap…). Move it to Cloudflare, where renewals cost what Cloudflare pays for them, with nothing on top. The agent walks you through it:
   1. Cloudflare → **Add a domain** (Free plan). **YOU** change the nameservers at your current registrar to the two Cloudflare shows. This alone is enough for the kit to work, and takes minutes to a few hours.
   2. Then **Domain Registration → Transfer Domains**. **YOU** unlock the domain and get its auth code at the old registrar. You pay one year at Cloudflare's price, and it's added to your registration. A domain bought or moved in the last 60 days has to wait.
-- **Not now.** The `workers.dev` address works for everything except the email add-on (B10). Stripe's link can be remade later.
+- **Not now.** The `workers.dev` address works for everything except the email add-on (C1). Stripe's link can be remade later.
 
 Then the agent puts the domain in the `"routes"` line of `wrangler.jsonc` and deploys again. A brand-new domain can take a few minutes to answer. If it looks dead from your computer but `dig @1.1.1.1 yourdomain.com` shows an address, it's your computer's DNS cache, not the site.
 
@@ -174,9 +174,17 @@ If the thank-you page says "paused", the key or one of its three permissions is 
 stripe checkout sessions list --live -d "customer_details[email]=buyer@example.com"
 ```
 
-and send them `https://YOUR-SITE/thanks?session_id=<the cs_live_... id>`. It works for `DOWNLOAD_DAYS` (30) after the purchase; for an older one, send the file by hand. Or add B10, so it doesn't happen.
+and send them `https://YOUR-SITE/thanks?session_id=<the cs_live_... id>`. It works for `DOWNLOAD_DAYS` (30) after the purchase; for an older one, send the file by hand. Or add C1, so it doesn't happen.
 
-**B10. Optional: email buyers their link.** Stripe's receipt doesn't include the download, so a buyer who closes the tab has to write to you. This add-on emails them the thank-you link right after they pay, through [Resend](https://resend.com) (free up to 3,000 emails a month, 100 a day). It needs **your own domain** (step 3), and adds two secrets: a Stripe webhook secret and a Resend key that can only send.
+---
+
+## C. Optional add-ons
+
+The agent offers these once your shop works, not before. Each one adds something to look after, so take only what you'll use.
+
+### C1. Email buyers their link (Stripe path)
+
+Stripe's receipt doesn't include the download, so a buyer who closes the tab has to write to you. This add-on emails them the thank-you link right after they pay, through [Resend](https://resend.com) (free up to 3,000 emails a month, 100 a day). It needs **your own domain** (step 3), and adds two secrets: a Stripe webhook secret and a Resend key that can only send.
 1. **YOU:** make a Resend account and turn on 2FA. **Domains → Add domain**, and enter your domain. Resend shows a few DNS records: let it add them to Cloudflare if it offers to, or add them yourself in Cloudflare → your domain → **DNS**. Wait until Resend says **Verified**.
 2. **YOU (the agent can drive Chrome):** Resend → **API Keys → Create API key**. Permission **Sending access**, domain **only yours**. Create it, copy it with Resend's copy button, and send it the same way as in B5: `pbpaste | npx wrangler secret put RESEND_API_KEY; pbcopy </dev/null` (on Windows, the `Get-Clipboard` version).
 3. In `wrangler.jsonc`, set `"EMAIL_FROM": "Your Shop <orders@yourdomain.com>"` (any name @ your verified domain). Deploy.
@@ -186,13 +194,55 @@ and send them `https://YOUR-SITE/thanks?session_id=<the cs_live_... id>`. It wor
 
 The Worker doesn't trust what the webhook says: it asks Stripe about the purchase again with the read-only key, and emails the address Stripe has for it. A forged webhook can't make it send anything.
 
+### C2. Email signup form (either path)
+
+A "get notified" form on your page, for people who aren't buying yet. The emails go into a private Cloudflare database (D1, free at this size), and you download them as a CSV whenever you want to write to them.
+
+It collects; it doesn't send. When you're ready to email your list, import the CSV into a newsletter tool (Buttondown, Kit, MailerLite…). That tool handles the unsubscribe links, bounces and the legal footer you'd otherwise have to build. If you'd rather use one of those tools from day one, put its own signup form on your page and skip this add-on.
+
+**How it keeps abusers out:**
+- **Cloudflare Turnstile** (free, no cookies, usually invisible to people) stops bots. The Worker checks every sign-up with Cloudflare, so a script that skips the check gets nothing in.
+- **A hidden honeypot field** that people never see and bots fill in. Those sign-ups are dropped silently.
+- **Same-site only:** another website can't post its visitors into your list.
+- **An hourly cap** (100 by default, `SUBSCRIBE_HOURLY_CAP`): a flood can't fill your database, it only pauses sign-ups until the hour rolls over.
+- **The same answer every time**, whether an email was new or already there, so nobody can use the form to find out who's on your list.
+
+**Setting it up:**
+1. In `wrangler.jsonc`, remove the `//` in front of the `"d1_databases"` line, then `npx wrangler deploy`. The deploy creates the database.
+2. `npx wrangler d1 migrations apply SUBSCRIBERS --remote` creates the table.
+3. **Turnstile (the agent can drive Chrome):** Cloudflare → **Turnstile → Add widget**.
+   - Name it after your shop, add your domain (and the `workers.dev` address while you test), and choose mode **Managed**.
+   - You get a *site key*, which is public and goes in the form, and a *secret key*. Copy the secret key with its copy button and run `pbpaste | npx wrangler secret put TURNSTILE_SECRET; pbcopy </dev/null`.
+4. The agent adds the form to your page:
+   ```html
+   <form method="post" action="/subscribe">
+     <label for="email">Get an email when the next one is out</label>
+     <input id="email" name="email" type="email" required maxlength="254" autocomplete="email">
+     <input name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px">
+     <div class="cf-turnstile" data-sitekey="YOUR-SITE-KEY"></div>
+     <button>Notify me</button>
+     <p>One email when there's something new. Unsubscribe any time.</p>
+   </form>
+   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+   ```
+   Say plainly what people are signing up for: that sentence is their consent. Add a line to your page's footer, for example: "If you sign up, we store your email address to write to you about [what]. Ask us and we'll delete it."
+5. Deploy, and test it: sign up with your own address, then sign up again with it. Both times you see "You're on the list", and the list has you once.
+
+**Using it:**
+- Download the list: `scripts/export-subscribers.sh` writes `private/subscribers.csv`. Import it into your newsletter tool, then delete the file: it's people's personal data.
+- Someone asks to be removed:
+  `npx wrangler d1 execute SUBSCRIBERS --remote --command "DELETE FROM subscribers WHERE email = 'their@email.com'"`
+  and remove them from the newsletter tool too.
+- How many signed up: `npx wrangler d1 execute SUBSCRIBERS --remote --command "SELECT count(*) FROM subscribers"`
+
 ---
 
 ## Keeping it safe
 
 - **2FA everywhere** (step 1). There is no server to hack, so an attacker goes after your accounts.
 - **The one secret** is the read-only Stripe key, stored as a Cloudflare secret. With it, someone could read your orders and buyers' emails, but not charge, refund, change products or move money. If you suspect it leaked, delete it in Stripe and redo B5.
-- **With B10**, two more secrets. The Resend key can only send email, but it can send it *as your domain*, which makes it useful for phishing your buyers. If you suspect a leak, delete it in Resend and make a new one. The webhook secret is close to worthless on its own (see B10).
+- **With C1**, two more secrets. The Resend key can only send email, but it can send it *as your domain*, which makes it useful for phishing your buyers. If you suspect a leak, delete it in Resend and make a new one. The webhook secret is close to worthless on its own (see C1).
 - **Your CLI logins are the most powerful keys in this setup.** `stripe login` leaves a *full-access* key on your computer (you'll see it in the Dashboard as "CLI key for <your computer>"), and `wrangler login` can change anything on Cloudflare. Log out when you're done: `stripe logout`, `npx wrangler logout`.
 - **Links can be shared.** A buyer can pass their thank-you link to a friend for 30 days. Lower `DOWNLOAD_DAYS` if that matters to you; Gumroad has the same trade-off.
+- **With C2**, your list is personal data in your Cloudflare account: it's as safe as that login, and the CSV you export is as safe as your computer. Delete exports once imported.
 - **Updating this kit:** don't blindly pull a newer version and run it (or let an agent do so). Look at what changed first (`git diff`), especially `src/worker.js`.

@@ -1,5 +1,6 @@
-// The kit's only code, used only on the Stripe path. Your landing page (site/) is static and served as-is.
+// The kit's only code. Your landing page (site/) is static and served as-is; this runs only for the routes below.
 //
+// Stripe path:
 //   GET /thanks?session_id=cs_...    where your Stripe Payment Link sends the buyer: a page with the download button
 //   GET /download?session_id=cs_...  the file itself, streamed from your private R2 bucket
 //
@@ -10,15 +11,23 @@
 // Checkout Sessions, PaymentIntents and Charges: if it leaks, nobody can charge, refund, create products or
 // move money with it.
 //
-// Optional (GUIDE.md, "B10. Email the link"): POST /stripe/webhook emails the buyer their /thanks link through
+// Add-on C1 (GUIDE.md, "Email buyers their link"): POST /stripe/webhook emails the buyer their /thanks link through
 // Resend, so a closed tab is not a lost purchase. Off unless STRIPE_WEBHOOK_SECRET, RESEND_API_KEY and
 // EMAIL_FROM are all set. It takes only the session id from the event and re-checks that session with Stripe,
 // so a forged event can't make it send anything.
+//
+// Add-on C2 (GUIDE.md, "Email signup form", either path): POST /subscribe adds an email to the D1 database bound
+// as SUBSCRIBERS. Off unless that binding exists. Turnstile (when TURNSTILE_SECRET is set), a honeypot field, a
+// same-site check and an hourly cap keep bots and floods out; every outcome looks the same to the visitor.
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === "/stripe/webhook") return webhook(request, env);
+    if (url.pathname === "/subscribe") {
+      try { return await subscribe(request, env, url); }
+      catch (e) { console.error("subscribe failed:", e && e.stack || e); return page(env, 500, "Something went wrong on our side. Please try again in a minute."); }
+    }
     const route = { "/thanks": thanks, "/download": download }[url.pathname];
     if (!route) return env.ASSETS.fetch(request);
     if (request.method !== "GET" && request.method !== "HEAD") return page(env, 405, "Not allowed.");
@@ -152,6 +161,52 @@ async function verifyStripeSignature(secret, header, payload, toleranceSec = 300
   const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${t}.${payload}`));
   const expected = [...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, "0")).join("");
   return parts.v1.some((v) => v.length === expected.length && [...v].reduce((r, c, i) => r | (c.charCodeAt(0) ^ expected.charCodeAt(i)), 0) === 0);
+}
+
+// ---------- add-on C2: email signup form ----------
+async function subscribe(request, env, url) {
+  if (!env.SUBSCRIBERS) return new Response("not found", { status: 404 });
+  if (request.method !== "POST") return page(env, 405, "Not allowed.");
+  // Only forms on this site: another site can't post its visitors into your list.
+  const origin = request.headers.get("origin");
+  if (origin && origin !== url.origin) return page(env, 403, "Not allowed.");
+  if (!/^(application\/x-www-form-urlencoded|multipart\/form-data)/.test(request.headers.get("content-type") || "")) return page(env, 415, "Not allowed.");
+  if (Number(request.headers.get("content-length") || 0) > 8192) return page(env, 413, "Not allowed.");
+
+  const form = await request.formData();
+  const done = () => page(env, 200, `<h1>You're on the list</h1><p>Thanks. We'll only write when there's something worth your time, and you can unsubscribe from any email.</p>`, true);
+  if (form.get("website")) return done(); // honeypot: a hidden field only bots fill in; they get the same answer, nothing is stored
+
+  if (env.TURNSTILE_SECRET) {
+    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body: new URLSearchParams({
+        secret: env.TURNSTILE_SECRET,
+        response: String(form.get("cf-turnstile-response") || ""),
+        remoteip: request.headers.get("cf-connecting-ip") || "",
+      }),
+    });
+    const v = await res.json().catch(() => ({}));
+    if (!v.success) return page(env, 400, "We couldn't check that you're a person. Go back, wait a second, and try again.");
+  }
+
+  const email = String(form.get("email") || "").trim().toLowerCase();
+  if (email.length > 254 || !/^[^\s@<>"',;]+@[^\s@<>"',;]+\.[a-z]{2,}$/.test(email)) {
+    return page(env, 400, "That email address doesn't look right. Go back and check it.");
+  }
+  // A flood can't fill your database: past the hourly cap, sign-ups pause until the hour rolls over.
+  const since = new Date(Date.now() - 3600e3).toISOString();
+  const recent = await env.SUBSCRIBERS.prepare("SELECT count(*) AS n FROM subscribers WHERE created_at > ?1").bind(since).first();
+  if (recent.n >= Number(env.SUBSCRIBE_HOURLY_CAP || 100)) {
+    console.error("subscribe: hourly cap reached");
+    return page(env, 429, "Too many sign-ups right now. Please try again in an hour.");
+  }
+  const ref = request.headers.get("referer") || "";
+  const source = ref.startsWith(url.origin) ? new URL(ref).pathname.slice(0, 100) : null;
+  // Already on the list? Same answer, so nobody can use the form to find out who is.
+  await env.SUBSCRIBERS.prepare("INSERT INTO subscribers (email, created_at, source) VALUES (?1, ?2, ?3) ON CONFLICT (email) DO NOTHING")
+    .bind(email, new Date().toISOString(), source).run();
+  return done();
 }
 
 function parseProducts(v) {

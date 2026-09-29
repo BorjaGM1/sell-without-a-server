@@ -1,5 +1,5 @@
 #!/bin/bash
-# Optional email add-on (GUIDE.md B10): creates the Stripe webhook that tells the Worker about each purchase,
+# Add-on C1 (GUIDE.md, "Email buyers their link"): creates the Stripe webhook that tells the Worker about each purchase,
 # and stores its signing secret in Cloudflare. The secret is never printed, so an agent running this never sees it.
 #   usage: scripts/add-webhook.sh https://yourdomain.com          (sandbox, while `stripe login` is on the sandbox)
 #          scripts/add-webhook.sh https://yourdomain.com --live   (live)

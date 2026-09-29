@@ -5,13 +5,13 @@
   "main": "src/worker.js",
   "compatibility_date": "2026-09-01",
 
-  // Your landing page. Cloudflare serves it as-is; the Worker code only runs for /thanks, /download and /stripe/webhook.
+  // Your landing page. Cloudflare serves it as-is; the Worker code only runs for the routes listed here.
   "assets": {
     "directory": "./site",
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/thanks", "/download", "/stripe/webhook"]
+    "run_worker_first": ["/thanks", "/download", "/stripe/webhook", "/subscribe"]
   },
 
   // Your own domain (GUIDE.md 3b: the agent asks you, and can help find and check one on Cloudflare).
@@ -28,12 +28,16 @@
     },
     "DOWNLOAD_DAYS": "30",
     "SUPPORT_EMAIL": "you@example.com",
-    // Optional: email buyers their link (GUIDE.md B10). Empty = off. A sender on your own domain, verified in Resend.
+    // Add-on C1: email buyers their link (GUIDE.md C1). Empty = off. A sender on your own domain, verified in Resend.
     "EMAIL_FROM": ""
   },
   // The private bucket that holds your product file. Nothing in it is public; only /download reads it.
   "r2_buckets": [{ "binding": "FILES", "bucket_name": "my-shop-files" }],
-  // Secrets (never in this file): STRIPE_READ_KEY (B5); for B10 also STRIPE_WEBHOOK_SECRET and RESEND_API_KEY.
+  // Secrets (never in this file): STRIPE_READ_KEY (B5); for C1 also STRIPE_WEBHOOK_SECRET and RESEND_API_KEY.
+
+  // ---- Add-on C2: email signup form (either path). Remove the // to turn it on; the next deploy creates the database. ----
+  // "d1_databases": [{ "binding": "SUBSCRIBERS", "database_name": "my-shop-subscribers", "migrations_dir": "migrations" }],
+  // Secret for C2: TURNSTILE_SECRET (strongly recommended). Optional var: "SUBSCRIBE_HOURLY_CAP" (default 100).
 
   "observability": { "enabled": true }
 }

@@ -1,6 +1,6 @@
 ---
 name: dashboards
-description: Known click paths for the dashboard steps that have no CLI (Stripe restricted keys, Managed Payments, branding, going live; Cloudflare domain search, purchase and transfer; Resend domain and key; Gumroad product, test purchase, payouts). Use when driving the browser with Claude in Chrome for any GUIDE.md step, or when telling the person exactly what to click.
+description: Known click paths for the dashboard steps that have no CLI (Stripe restricted keys, Managed Payments, branding, going live; Cloudflare domain search, purchase and transfer, Turnstile; Resend domain and key; Gumroad product, test purchase, payouts). Use when driving the browser with Claude in Chrome for any GUIDE.md step, or when telling the person exactly what to click.
 ---
 
 # Dashboards: known click paths
@@ -34,7 +34,7 @@ Before handing over, get them as close as you can: open the page and fill in eve
 - **Delete a key** ✅: API keys → **⋯** on its row → **Expire key** → confirm.
 - **Branding** (so the checkout looks like their shop): Settings → **Branding** → icon, logo, brand colour. The person can pick; the agent can upload the cover or logo from the kit folder.
 - **Go live:** Dashboard → **Activate payments** (or "Complete your profile"). It asks for business details, identity and bank account, so it's all the person's. The agent can open it and explain each section. After that, repeat Managed Payments terms and the read-only key in live mode.
-- **Webhooks** (B10): Developers → **Webhooks** shows each delivery and lets you resend one.
+- **Webhooks** (C1): Developers → **Webhooks** shows each delivery and lets you resend one.
 
 ## Cloudflare
 
@@ -48,9 +48,15 @@ Before handing over, get them as close as you can: open the page and fill in eve
   1. First the domain has to be on Cloudflare: **Add a domain** (Free plan), and they change the nameservers at the old registrar to the two Cloudflare shows.
   2. Then **Domain Registration → Transfer Domains**. They get the auth code from the old registrar and unlock the domain there. It costs one year at cost and adds a year to the registration.
   - A domain bought or transferred in the last 60 days can't be moved yet. Step 1 is enough in the meantime.
+- **Turnstile** (C2):
+  1. **Turnstile → Add widget**. Name it after the shop.
+  2. Hostnames: their domain, plus the `workers.dev` address while testing. Mode: **Managed**.
+  3. The *site key* is public and goes in the form's `data-sitekey`.
+  4. Copy the *secret key* with its copy button, then run the clipboard pipe into `TURNSTILE_SECRET`.
+  - For tests, Cloudflare's public test secrets are `1x0000000000000000000000000000000AA` (always passes) and `2x0000000000000000000000000000000AA` (always fails), with the token `XXXX.DUMMY.TOKEN.XXXX`. Never leave a test secret on a live site.
 - **Email to their domain** (the footer's contact address): their domain → **Email → Email Routing** → enable → add their real inbox as the destination → catch-all.
 
-## Resend (B10)
+## Resend (C1)
 
 - **Domain:** **Domains → Add domain**.
   - If it offers to configure Cloudflare automatically, let it; the person approves the Cloudflare prompt.

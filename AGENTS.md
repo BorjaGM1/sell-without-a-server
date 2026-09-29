@@ -21,13 +21,21 @@ Then **go as far as you can on your own**. When you reach a **YOU** step, stop a
 - **Keys go from the provider's copy button to Cloudflare through the clipboard, never through you.** In Chrome, click the page's own copy button (Stripe: **Copy and close**) by its label. Don't take a screenshot or read the page while a key is on screen. Then run `pbpaste | npx wrangler secret put <NAME>; pbcopy </dev/null`, or `Get-Clipboard | … ; Set-Clipboard -Value $null` on Windows. The value goes straight into the pipe without being printed. The webhook secret is handled by `scripts/add-webhook.sh`: never print its creation response yourself.
 - Never create a Stripe secret key (`sk_live_…`, `sk_test_…`) or any key with write permissions for the Worker. The Worker gets the read-only restricted key from `GUIDE.md` B5 and nothing else. The Resend key is **Sending access**, limited to the person's domain. In **live** mode, the person clicks **Create key**; in a sandbox you may, if they agreed at the start.
 - Never put the product file in `site/`: everything there is public. It goes in the private R2 bucket, which the first `npx wrangler deploy` creates by itself.
-- Never add a server, VPS, database or analytics script. The only optional extra is the email add-on in B10. If the person asks for more, explain what it would add to look after and let them decide. For collecting emails from visitors, point them to a newsletter tool's signup form or a free Gumroad product, not a database of your own.
+- Never add a server, VPS or analytics script. The add-ons are in `GUIDE.md` section C, and each one is built only if the person says yes. If they ask for something else, explain what it would add to look after and let them decide.
 - The last click on going live, buying a domain, or payout and bank settings is always theirs. Take them right up to it: open the page, fill in everything else, explain what each field means, and name the one button left.
 - Never run `git pull` on this kit and then execute it without showing the person the diff first.
 
+## End: offer the add-ons
+
+Once the shop works end to end, and not before, offer the add-ons in one message, with one line each on what it gives and what it adds to look after:
+- **C1. Email buyers their link.** Stripe path only; needs their own domain and a Resend account.
+- **C2. Email signup form.** Either path. A free newsletter tool's own form is the alternative if they'd rather not keep the list themselves.
+
+Follow `GUIDE.md` exactly for whichever they pick, including every protection. For C2, never ship the form without Turnstile unless they explicitly decline it after you explain what it's for, and always say on the page what people are signing up for.
+
 ## In the browser (Claude in Chrome)
 
-Some steps have no CLI: Managed Payments terms, restricted keys, branding, finding and buying a domain, Resend, and most of Gumroad. The known click paths, with what's been tested, are in `.claude/skills/dashboards/SKILL.md`. Open the page, do what it says, and **hand over** for anything that asks for a password, 2FA, a card, bank details, legal identity, or a final Buy / Activate / Publish in live mode. If Stripe's checkout asks whether you are an AI agent acting for someone, answer truthfully.
+Some steps have no CLI: Managed Payments terms, restricted keys, branding, finding and buying a domain, Turnstile, Resend, and most of Gumroad. The known click paths, with what's been tested, are in `.claude/skills/dashboards/SKILL.md`. Open the page, do what it says, and **hand over** for anything that asks for a password, 2FA, a card, bank details, legal identity, or a final Buy / Activate / Publish in live mode. If Stripe's checkout asks whether you are an AI agent acting for someone, answer truthfully.
 
 ## Checking your work
 
