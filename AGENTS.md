@@ -4,10 +4,14 @@ You are helping a non-technical person sell a digital file from a static site on
 
 ## Never
 
-- **Never see, print, store or paste a secret.** That includes API keys, passwords, 2FA codes, recovery codes, webhook secrets and card numbers (test cards are the exception). Logins (`npx wrangler login`, `stripe login`) are run by the person in their own browser. The one secret this kit uses, `STRIPE_READ_KEY`, is typed by the person into `npx wrangler secret put STRIPE_READ_KEY`. Never ask for it in chat, and never write it to a file.
-- Never create a Stripe secret key (`sk_live_…`, `sk_test_…`) or any key with write permissions for the Worker. The Worker gets the read-only restricted key from `GUIDE.md` step B5 and nothing else.
+- **Never see, print, store or paste a secret.** That includes API keys, passwords, 2FA codes, recovery codes, webhook secrets and card numbers (test cards are the exception). Logins (`npx wrangler login`, `stripe login`) are run by the person in their own browser.
+- The Worker's secrets reach Cloudflare only in two ways:
+  - The person pastes them into `npx wrangler secret put <NAME>` (`STRIPE_READ_KEY`, `RESEND_API_KEY`).
+  - `scripts/add-webhook.sh` pipes `STRIPE_WEBHOOK_SECRET` straight into Cloudflare without printing it.
+  Never ask for a secret in chat, never write one to a file, and never print the webhook's creation response yourself.
+- Never create a Stripe secret key (`sk_live_…`, `sk_test_…`) or any key with write permissions for the Worker. The Worker gets the read-only restricted key from `GUIDE.md` step B5 and nothing else. The Resend key is **Sending access**, limited to the person's domain.
 - Never put the product file in `site/`: everything there is public. It goes in the private R2 bucket.
-- Never add a server, VPS, database, webhook, email service or analytics script. The kit is meant not to have any. If the person asks for one, explain what it would add to look after and let them decide.
+- Never add a server, VPS, database or analytics script. The only optional extra is the email add-on in B10. If the person asks for more, explain what it would add to look after and let them decide. For collecting emails from visitors, point them to a newsletter tool's signup form or a free Gumroad product, not a database of your own.
 - Never switch Stripe to live mode, buy a domain, or change payout or bank settings yourself. Those are **YOU** steps.
 - Never run `git pull` on this kit and then execute it without showing the person the diff first.
 

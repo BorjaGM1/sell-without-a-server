@@ -5,13 +5,13 @@
   "main": "src/worker.js",
   "compatibility_date": "2026-09-01",
 
-  // Your landing page. Cloudflare serves it as-is; the Worker code only runs for /thanks and /download.
+  // Your landing page. Cloudflare serves it as-is; the Worker code only runs for /thanks, /download and /stripe/webhook.
   "assets": {
     "directory": "./site",
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/thanks", "/download"]
+    "run_worker_first": ["/thanks", "/download", "/stripe/webhook"]
   },
 
   // EDIT (optional): your own domain, once it is on Cloudflare. Remove the // at the start of the line.
@@ -26,11 +26,13 @@
       "plink_REPLACE_ME": { "file": "my-product.pdf", "name": "My-Product.pdf", "title": "My Product" }
     },
     "DOWNLOAD_DAYS": "30",
-    "SUPPORT_EMAIL": "you@example.com"
+    "SUPPORT_EMAIL": "you@example.com",
+    // Optional: email buyers their link (GUIDE.md B10). Empty = off. A sender on your own domain, verified in Resend.
+    "EMAIL_FROM": ""
   },
   // The private bucket that holds your product file. Nothing in it is public; only /download reads it.
   "r2_buckets": [{ "binding": "FILES", "bucket_name": "my-shop-files" }],
-  // Secret (never in this file): STRIPE_READ_KEY, set with `npx wrangler secret put STRIPE_READ_KEY`.
+  // Secrets (never in this file): STRIPE_READ_KEY (B5); for B10 also STRIPE_WEBHOOK_SECRET and RESEND_API_KEY.
 
   "observability": { "enabled": true }
 }

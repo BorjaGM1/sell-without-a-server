@@ -24,7 +24,8 @@ Prefer doing it by hand? `GUIDE.md` is written for people who have never used a 
 | `GUIDE.md` | Every step, Gumroad (A) or Stripe (B), including testing with fake cards |
 | `AGENTS.md` | The rules an agent follows here: never touch secrets, stop at every **YOU** step |
 | `site/` | Your landing page goes here (the agent writes it) |
-| `src/worker.js` | Stripe path only: the thank-you page and the file download |
+| `src/worker.js` | Stripe path only: the thank-you page, the file download, and the optional email |
+| `scripts/add-webhook.sh` | Optional email add-on: creates the Stripe webhook without showing its secret |
 | `wrangler.jsonc` | Cloudflare settings: name, domain, products |
 
 ## What can go wrong, and what doesn't exist to go wrong
@@ -34,6 +35,8 @@ Prefer doing it by hand? `GUIDE.md` is written for people who have never used a 
 | Your Gumroad, Stripe or Cloudflare login | Anything | 2FA on all of them and on your email (GUIDE step 1) |
 | The Worker's Stripe key | Read orders and buyer emails | It's a read-only restricted key; delete it and make a new one |
 | A buyer's thank-you link | Download the file for 30 days | `DOWNLOAD_DAYS`; refunded or disputed purchases are cut off |
+| The Resend key (optional email add-on) | Send email as your domain | A sending-only key limited to one domain; delete it and make a new one |
+| The webhook secret (optional email add-on) | Almost nothing | The Worker re-checks every purchase with Stripe before it emails |
 | A server | Nothing: there isn't one | |
 
 Don't update by blindly pulling and running a new version: read the diff first.

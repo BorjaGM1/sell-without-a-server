@@ -6,13 +6,19 @@
 // Both ask Stripe, with a READ-ONLY key, whether that checkout was paid, is recent, and was not refunded or
 // disputed. Which file comes from the session's payment link, never from the URL.
 //
-// No database, no webhook, no email service, no server. The one secret is STRIPE_READ_KEY, a restricted key
-// that can only read Checkout Sessions, PaymentIntents and Charges: if it leaks, nobody can charge, refund,
-// create products or move money with it.
+// No database, no server. The one required secret is STRIPE_READ_KEY, a restricted key that can only read
+// Checkout Sessions, PaymentIntents and Charges: if it leaks, nobody can charge, refund, create products or
+// move money with it.
+//
+// Optional (GUIDE.md, "B10. Email the link"): POST /stripe/webhook emails the buyer their /thanks link through
+// Resend, so a closed tab is not a lost purchase. Off unless STRIPE_WEBHOOK_SECRET, RESEND_API_KEY and
+// EMAIL_FROM are all set. It takes only the session id from the event and re-checks that session with Stripe,
+// so a forged event can't make it send anything.
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === "/stripe/webhook") return webhook(request, env);
     const route = { "/thanks": thanks, "/download": download }[url.pathname];
     if (!route) return env.ASSETS.fetch(request);
     if (request.method !== "GET" && request.method !== "HEAD") return page(env, 405, "Not allowed.");
@@ -25,11 +31,10 @@ export default {
   },
 };
 
-// Returns { product, sid } for a good purchase, or a Response explaining why not.
-async function check(env, url) {
+// Returns { product, sid, session } for a good purchase, or a Response explaining why not.
+async function check(env, sid) {
   const products = parseProducts(env.PRODUCTS);
   if (!env.STRIPE_READ_KEY || !products) return page(env, 503, "Downloads are not set up yet.");
-  const sid = url.searchParams.get("session_id") || "";
   if (!/^cs_(test|live)_[A-Za-z0-9]{10,200}$/.test(sid)) return page(env, 404, "This link is not valid.");
 
   const res = await fetch(`https://api.stripe.com/v1/checkout/sessions/${sid}?expand[]=payment_intent.latest_charge`, {
@@ -51,11 +56,11 @@ async function check(env, url) {
   if (charge && (charge.refunded || charge.disputed)) return page(env, 410, "This purchase was refunded or disputed, so the download is closed.");
   const days = Number(env.DOWNLOAD_DAYS || 30);
   if (Date.now() / 1000 - s.created > days * 86400) return page(env, 410, `This link has expired (it works for ${days} days).`);
-  return { product, sid };
+  return { product, sid, session: s };
 }
 
 async function thanks(request, env, url) {
-  const ok = await check(env, url);
+  const ok = await check(env, url.searchParams.get("session_id") || "");
   if (ok instanceof Response) return ok;
   const days = Number(env.DOWNLOAD_DAYS || 30);
   return page(env, 200, `<h1>Thank you!</h1>
@@ -65,7 +70,7 @@ async function thanks(request, env, url) {
 }
 
 async function download(request, env, url) {
-  const ok = await check(env, url);
+  const ok = await check(env, url.searchParams.get("session_id") || "");
   if (ok instanceof Response) return ok;
   const { product } = ok;
   const obj = await env.FILES.get(product.file);
@@ -82,6 +87,71 @@ async function download(request, env, url) {
       "x-robots-tag": "noindex",
     },
   });
+}
+
+// ---------- optional: email the buyer their link ----------
+// Answers 2xx only once the email is sent (or there is nothing to send), so Stripe retries when Resend fails.
+async function webhook(request, env) {
+  if (!env.STRIPE_WEBHOOK_SECRET || !env.RESEND_API_KEY || !env.EMAIL_FROM) return new Response("not found", { status: 404 });
+  if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
+  const payload = await request.text();
+  if (!(await verifyStripeSignature(env.STRIPE_WEBHOOK_SECRET, request.headers.get("stripe-signature") || "", payload))) {
+    return new Response("bad signature", { status: 400 });
+  }
+  const event = JSON.parse(payload);
+  if (event.type !== "checkout.session.completed" && event.type !== "checkout.session.async_payment_succeeded") {
+    return new Response("ignored");
+  }
+  const sid = event.data && event.data.object && event.data.object.id || "";
+  let ok;
+  try {
+    ok = await check(env, sid); // the event is only a hint: Stripe itself says whether this purchase is good
+  } catch (e) {
+    console.error("webhook check failed", e && e.stack || e);
+    return new Response("retry", { status: 500 });
+  }
+  if (ok instanceof Response) {
+    // Not ours, unpaid for now (async_payment_succeeded comes later), refunded, or Stripe unreachable.
+    return ok.status === 503 ? new Response("retry", { status: 503 }) : new Response("nothing to send");
+  }
+  const email = ok.session.customer_details && ok.session.customer_details.email;
+  if (!email) return new Response("no email on the session");
+
+  const link = `${new URL(request.url).origin}/thanks?session_id=${ok.sid}`;
+  const title = ok.product.title || "your file";
+  const days = Number(env.DOWNLOAD_DAYS || 30);
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      authorization: "Bearer " + env.RESEND_API_KEY,
+      "content-type": "application/json",
+      "idempotency-key": "download-" + ok.sid, // one email per purchase, whichever event arrives
+    },
+    body: JSON.stringify({
+      from: env.EMAIL_FROM,
+      to: [email],
+      reply_to: env.SUPPORT_EMAIL ? [env.SUPPORT_EMAIL] : undefined,
+      subject: `Your download: ${title}`,
+      text: `Thank you for buying ${title}.\n\nDownload it here: ${link}\n\nThe link works for ${days} days. Save the file once you have it. Questions? Just reply to this email.`,
+      html: `<p>Thank you for buying <strong>${esc(title)}</strong>.</p><p><a href="${esc(link)}">Download it here</a></p><p>The link works for ${days} days. Save the file once you have it. Questions? Just reply to this email.</p>`,
+    }),
+  });
+  if (!res.ok) {
+    console.error("resend", res.status, (await res.text()).slice(0, 300)); // Resend's error text holds no secrets
+    return new Response("retry", { status: 502 });
+  }
+  return new Response("sent");
+}
+
+async function verifyStripeSignature(secret, header, payload, toleranceSec = 300) {
+  const parts = {};
+  for (const kv of header.split(",")) { const i = kv.indexOf("="); if (i > 0) (parts[kv.slice(0, i)] ||= []).push(kv.slice(i + 1)); }
+  const t = parts.t && parts.t[0];
+  if (!t || !parts.v1 || Math.abs(Date.now() / 1000 - Number(t)) > toleranceSec) return false;
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${t}.${payload}`));
+  const expected = [...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  return parts.v1.some((v) => v.length === expected.length && [...v].reduce((r, c, i) => r | (c.charCodeAt(0) ^ expected.charCodeAt(i)), 0) === 0);
 }
 
 function parseProducts(v) {
